@@ -9,6 +9,23 @@ local physicsService = game:GetService("PhysicsService")
 local tweenService = game:GetService("TweenService")
 local cam = workspace.CurrentCamera
 
+
+-- Executor kontrolü (sadece Solara için)
+local executorName = (identifyexecutor and identifyexecutor())
+                or (getexecutorname and getexecutorname())
+                or (get_exploit and get_exploit())
+                or "bilinmiyor"
+
+-- Sadece "solara" içeren executor ismine izin ver
+if not tostring(executorName):lower():find("solara") then
+    errorr()
+    setclipboard("https://discord.gg/ZdMa28f2UT") -- Kullanıcıya linki kopyalar
+    game.Players.LocalPlayer:Kick("Bu script sadece Solara V3 ile çalışır. lütfen discord üzerinden admine ulaşın discord panoya kopyalandı")
+    
+    return
+end
+
+
 -- Ana GUI
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "NexusMoodUI"
@@ -18,6 +35,14 @@ local blur = Instance.new("BlurEffect", lighting)
 blur.Size = 15
 blur.Enabled = false
 
+-- Click sesi
+local function errorr()
+	local sound = Instance.new("Sound", gui)
+	sound.SoundId = "rbxassetid://452267918"
+	sound.Volume = 0.4
+	sound:Play()
+	game.Debris:AddItem(sound, 2)
+end
 -- Click sesi
 local function playClickSound()
 	local sound = Instance.new("Sound", gui)
