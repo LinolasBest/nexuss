@@ -29,7 +29,7 @@ end
 
 -- Ana çerçeve - YÜKSEKLİK ARTIRILDI
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 450, 0, 650) -- Yükseklik 500'den 630'e çıkarıldı
+frame.Size = UDim2.new(0, 450, 0, 680) -- Yükseklik 500'den 630'e çıkarıldı
 frame.Position = UDim2.new(0.5, -225, 0.5, -290) -- Konum da güncellendi (genişlik/2, yükseklik/2)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 frame.Visible = false
@@ -147,6 +147,53 @@ local espData = {}
 local originalCollisionGroup = "Default"
 local noclipCollisionGroupName = "NoclipGroup"
 local noclipConnection
+local autoClickerEnabled = false
+local autoClickerDelay = 0.05 -- saniyede ~20 tıklama
+local autoClickerToggleKey = Enum.KeyCode.RightControl
+local autoClickerConnection
+
+local autoClickerBtn = createButton("Auto Clicker: OFF (Toggle: Right Control)")
+autoClickerBtn.MouseButton1Click:Connect(function()
+	autoClickerEnabled = not autoClickerEnabled
+	autoClickerBtn.Text = "Auto Clicker: " .. (autoClickerEnabled and "ON" or "OFF") .. " (Toggle: Right Control)"
+	playClickSound()
+
+	if autoClickerEnabled then
+		autoClickerConnection = rs.RenderStepped:Connect(function()
+			mouse1press()
+			task.wait(autoClickerDelay)
+			mouse1release()
+		end)
+	else
+		if autoClickerConnection then
+			autoClickerConnection:Disconnect()
+			autoClickerConnection = nil
+		end
+	end
+end)
+
+-- Klavyeden X tuşu ile aç/kapat
+uis.InputBegan:Connect(function(input, gpe)
+	if not gpe and input.KeyCode == autoClickerToggleKey then
+		autoClickerEnabled = not autoClickerEnabled
+		autoClickerBtn.Text = "Auto Clicker: " .. (autoClickerEnabled and "ON" or "OFF") .. " (Toggle: Right Control)"
+		playClickSound()
+
+		if autoClickerEnabled then
+			autoClickerConnection = rs.RenderStepped:Connect(function()
+				mouse1press()
+				task.wait(autoClickerDelay)
+				mouse1release()
+			end)
+		else
+			if autoClickerConnection then
+				autoClickerConnection:Disconnect()
+				autoClickerConnection = nil
+			end
+		end
+	end
+end)
+
 
 -- Infinite Jump
 local infJumpBtn = createButton("Infinite Jump: OFF")
@@ -731,7 +778,12 @@ unloadBtn.MouseButton1Click:Connect(function()
 	noLegsEnabled = false
 	flashlightEnabled = false
 	nightModeEnabled = false
+autoClickerEnabled = false
 
+        if autoClickerConnection then
+    autoClickerConnection:Disconnect()
+    autoClickerConnection = nil
+end
 	disableNoclip()
 	disableNoLegs()
 	disableFlashlight()
@@ -786,7 +838,7 @@ discordButton.MouseButton1Click:Connect(function()
 	setclipboard("https://discord.gg/ZdMa28f2UT") -- Kullanıcıya linki kopyalar
 	game.StarterGui:SetCore("SendNotification", {
 		Title = "Nexus Discord",
-		Text = "Discord linki kopyalandı!",
+		Text = "Discord penceresi açıldı",
 		Duration = 4
 	})
 end)
