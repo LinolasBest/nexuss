@@ -52,12 +52,12 @@ title.LayoutOrder = 0
 
 -- Alt başlık
 local subtitle = Instance.new("TextLabel", frame)
-subtitle.Size = UDim2.new(1, 0, 0, 25)
+subtitle.Size = UDim2.new(1, 0, 0, 30)
 subtitle.BackgroundTransparency = 1
-subtitle.Text = "Made with ❤️ for Nexus Mood"
+subtitle.Text = "Your Edge in the Game"
 subtitle.Font = Enum.Font.Gotham
-subtitle.TextSize = 14
-subtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+subtitle.TextSize = 16
+subtitle.TextColor3 = Color3.fromRGB(180, 180, 190)
 subtitle.LayoutOrder = 1
 
 frame.BackgroundTransparency = 0.2
