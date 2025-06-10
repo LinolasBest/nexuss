@@ -1,0 +1,330 @@
+-- Tüm servisler
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local uis = game:GetService("UserInputService")
+local rs = game:GetService("RunService")
+local lighting = game:GetService("Lighting")
+local players = game:GetService("Players")
+
+-- Ana GUI
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "NexusMoodUI"
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local blur = Instance.new("BlurEffect", lighting)
+blur.Size = 15
+blur.Enabled = false
+
+-- Click sesi
+local function playClickSound()
+	local sound = Instance.new("Sound", gui)
+	sound.SoundId = "rbxassetid://9118823104"
+	sound.Volume = 0.4
+	sound:Play()
+	game.Debris:AddItem(sound, 2)
+end
+
+-- Ana çerçeve
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 450, 0, 500)
+frame.Position = UDim2.new(0.5, -185, 0.5, -200)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+frame.Visible = false
+frame.BorderSizePixel = 0
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+-- Sıralama sistemi
+local layout = Instance.new("UIListLayout", frame)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 12) -- 10 yerine
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+-- Başlık
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundTransparency = 1
+title.Text = "☄ Nexus & Mood ☄"
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 26
+title.TextColor3 = Color3.fromRGB(255, 100, 255)
+title.LayoutOrder = 0
+
+-- Alt başlık
+local subtitle = Instance.new("TextLabel", frame)
+subtitle.Size = UDim2.new(1, 0, 0, 25)
+subtitle.BackgroundTransparency = 1
+subtitle.Text = "Made with ❤️ for Nexus Mood"
+subtitle.Font = Enum.Font.Gotham
+subtitle.TextSize = 14
+subtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+subtitle.LayoutOrder = 1
+
+frame.BackgroundTransparency = 0.2
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Color = Color3.fromRGB(255, 100, 255)
+stroke.Thickness = 1.5
+stroke.Transparency = 0.3
+
+-- Buton oluşturma
+local function createButton(text)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0.9, 0, 0, 40)
+	b.Text = text
+	b.Font = Enum.Font.GothamSemibold
+	b.TextSize = 18
+	b.TextColor3 = Color3.new(1, 1, 1)
+	b.BackgroundColor3 = Color3.fromRGB(40, 40, 80)
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+	b.Parent = frame
+	return b
+end
+
+
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Şık hoş geldin mesajı (orijinal renklere uygun + animasyonlu)
+local welcomeLabel = Instance.new("TextLabel", gui)
+welcomeLabel.Size = UDim2.new(0, 300, 0, 30)
+welcomeLabel.Position = UDim2.new(1, -310, 1, 40) -- Aşağıdan yukarı animasyon için
+welcomeLabel.AnchorPoint = Vector2.new(0, 1)
+welcomeLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+welcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+welcomeLabel.TextStrokeTransparency = 0.4
+welcomeLabel.Text = "Mood & Nexus’a hoş geldin."
+welcomeLabel.Font = Enum.Font.GothamSemibold
+welcomeLabel.TextSize = 14
+welcomeLabel.BackgroundTransparency = 0.2
+welcomeLabel.BorderSizePixel = 0
+
+Instance.new("UICorner", welcomeLabel).CornerRadius = UDim.new(0, 8)
+
+-- Hafif beyaz kenarlık efekti
+local stroke = Instance.new("UIStroke", welcomeLabel)
+stroke.Color = Color3.fromRGB(255, 255, 255)
+stroke.Transparency = 0.8
+stroke.Thickness = 1
+
+-- Animasyon
+task.spawn(function()
+	local tweenService = game:GetService("TweenService")
+
+	-- Fade in + yukarı kayma
+	welcomeLabel.Position = UDim2.new(1, -310, 1, 60)
+	welcomeLabel.TextTransparency = 1
+	welcomeLabel.TextStrokeTransparency = 1
+
+	local appear = tweenService:Create(welcomeLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.new(1, -310, 1, -40),
+		TextTransparency = 0,
+		TextStrokeTransparency = 0.4
+	})
+	appear:Play()
+	appear.Completed:Wait()
+
+	wait(3)
+
+	-- Fade out + aşağı kayma
+	local disappear = tweenService:Create(welcomeLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		Position = UDim2.new(1, -310, 1, 60),
+		TextTransparency = 1,
+		TextStrokeTransparency = 1
+	})
+	disappear:Play()
+	disappear.Completed:Wait()
+
+	welcomeLabel:Destroy()
+end)
+
+
+
+-- Özellikler
+local infJump, tpEnabled, speedLevel, espEnabled, aimbotEnabled = false, false, 0, false, false
+local connections = {}
+local espObjects = {}
+
+-- Infinite Jump
+local infJumpBtn = createButton("Infinite Jump: OFF")
+infJumpBtn.MouseButton1Click:Connect(function()
+	infJump = not infJump
+	infJumpBtn.Text = "Infinite Jump: " .. (infJump and "ON" or "OFF")
+	playClickSound()
+end)
+
+table.insert(connections, uis.JumpRequest:Connect(function()
+	if infJump and player.Character and player.Character:FindFirstChild("Humanoid") then
+		player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	end
+end))
+
+-- Aimbot
+local aimbotBtn = createButton("Aimbot: OFF")
+aimbotBtn.MouseButton1Click:Connect(function()
+	aimbotEnabled = not aimbotEnabled
+	aimbotBtn.Text = "Aimbot: " .. (aimbotEnabled and "ON" or "OFF")
+	playClickSound()
+end)
+
+local function getClosestPlayerToMouse()
+	local closestDist = math.huge
+	local target = nil
+
+	for _, plr in pairs(players:GetPlayers()) do
+		if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
+			local head = plr.Character.Head
+			local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
+			if onScreen then
+				local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
+				if dist < closestDist then
+					closestDist = dist
+					target = head
+				end
+			end
+		end
+	end
+
+	return target
+end
+
+rs.RenderStepped:Connect(function()
+	if aimbotEnabled and uis:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+		local target = getClosestPlayerToMouse()
+		if target then
+			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Position)
+		end
+	end
+end)
+
+-- Speed
+local speedBtn = createButton("Speed: OFF")
+local humanoid = player.Character:WaitForChild("Humanoid")
+
+speedBtn.MouseButton1Click:Connect(function()
+	speedLevel = (speedLevel + 1) % 8
+	local speeds = {16, 32, 80, 160, 240, 320, 400, 480}
+	local labels = {"OFF", "x2", "x5", "x10", "x15", "x20", "x25", "x30"}
+	humanoid.WalkSpeed = speeds[speedLevel + 1]
+	speedBtn.Text = "Speed: " .. labels[speedLevel + 1]
+	playClickSound()
+end)
+
+-- TP
+local tpBtn = createButton("CTRL + Click TP: OFF")
+tpBtn.MouseButton1Click:Connect(function()
+	tpEnabled = not tpEnabled
+	tpBtn.Text = "CTRL + Click TP: " .. (tpEnabled and "ON" or "OFF")
+	playClickSound()
+end)
+
+mouse.Button1Down:Connect(function()
+	if tpEnabled and uis:IsKeyDown(Enum.KeyCode.LeftControl) then
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			char.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+		end
+	end
+end)
+
+-- ESP
+local espBtn = createButton("ESP: OFF")
+
+local function createESP(plr)
+	if plr == player then return end
+	local char = plr.Character
+	if not char or not char:FindFirstChild("Head") then return end
+
+	local espBox = Instance.new("BoxHandleAdornment")
+	espBox.Adornee = char
+	espBox.Size = Vector3.new(4, 6, 2)
+	espBox.Color3 = Color3.new(1, 0, 0)
+	espBox.AlwaysOnTop = true
+	espBox.ZIndex = 5
+	espBox.Transparency = 0.5
+	espBox.Parent = gui
+	espObjects[plr.Name .. "_box"] = espBox
+
+	local nameGui = Instance.new("BillboardGui", gui)
+	nameGui.Name = "ESP_" .. plr.Name
+	nameGui.Adornee = char:FindFirstChild("Head")
+	nameGui.Size = UDim2.new(0, 100, 0, 40)
+	nameGui.AlwaysOnTop = true
+	local label = Instance.new("TextLabel", nameGui)
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.Text = plr.Name
+	label.TextColor3 = Color3.fromRGB(255, 0, 0)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	espObjects[plr.Name .. "_name"] = nameGui
+end
+
+local function removeESP()
+	for _, v in pairs(espObjects) do
+		if v then v:Destroy() end
+	end
+	espObjects = {}
+end
+
+espBtn.MouseButton1Click:Connect(function()
+	espEnabled = not espEnabled
+	espBtn.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
+	playClickSound()
+	if espEnabled then
+		for _, plr in ipairs(players:GetPlayers()) do
+			if plr.Character then createESP(plr) end
+		end
+		table.insert(connections, players.PlayerAdded:Connect(createESP))
+		table.insert(connections, players.PlayerRemoving:Connect(function(p) if espObjects[p.Name] then espObjects[p.Name]:Destroy() end end))
+	else
+		removeESP()
+	end
+end)
+
+-- Unload (Her zaman en altta)
+local unloadBtn = createButton("❌ Unload Script")
+unloadBtn.BackgroundColor3 = Color3.fromRGB(100, 20, 20)
+unloadBtn.MouseButton1Click:Connect(function()
+	playClickSound()
+	infJump = false
+	tpEnabled = false
+	speedLevel = 0
+	humanoid.WalkSpeed = 16
+	espEnabled = false
+	aimbotEnabled = false
+	removeESP()
+	for _, c in pairs(connections) do
+		if typeof(c) == "RBXScriptConnection" then c:Disconnect() end
+	end
+	blur:Destroy()
+	gui:Destroy()
+end)
+
+-- Menü Toggle
+uis.InputBegan:Connect(function(input, gpe)
+	if not gpe and input.KeyCode == Enum.KeyCode.Insert then
+		frame.Visible = not frame.Visible
+		blur.Enabled = frame.Visible
+		playClickSound()
+	end
+end)
+
+-- Sürükleme
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		local start = input.Position
+		local startPos = frame.Position
+		local dragConn
+		dragConn = uis.InputChanged:Connect(function(move)
+			if move.UserInputType == Enum.UserInputType.MouseMovement then
+				local delta = move.Position - start
+				frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+					startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+			end
+		end)
+		uis.InputEnded:Connect(function(endInput)
+			if endInput.UserInputType == Enum.UserInputType.MouseButton1 then
+				dragConn:Disconnect()
+			end
+		end)
+	end
+end)
