@@ -786,7 +786,7 @@ discordButton.MouseButton1Click:Connect(function()
 	setclipboard("https://discord.gg/ZdMa28f2UT") -- Kullanıcıya linki kopyalar
 	game.StarterGui:SetCore("SendNotification", {
 		Title = "Nexus Discord",
-		Text = "Discord penceresi açıldı",
+		Text = "Discord linki kopyalandı!",
 		Duration = 4
 	})
 end)
