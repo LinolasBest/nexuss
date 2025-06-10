@@ -29,7 +29,7 @@ end
 
 -- Ana çerçeve - YÜKSEKLİK ARTIRILDI
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 450, 0, 680) -- Yükseklik 500'den 630'e çıkarıldı
+frame.Size = UDim2.new(0, 450, 0, 700) -- Yükseklik 500'den 700'e çıkarıldı
 frame.Position = UDim2.new(0.5, -225, 0.5, -290) -- Konum da güncellendi (genişlik/2, yükseklik/2)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 frame.Visible = false
