@@ -9,6 +9,14 @@ local physicsService = game:GetService("PhysicsService")
 local tweenService = game:GetService("TweenService")
 local cam = workspace.CurrentCamera
 
+-- Click/uyarı sesi (önce tanımla!)
+local function errorr()
+	local sound = Instance.new("Sound", player:WaitForChild("PlayerGui"))
+	sound.SoundId = "rbxassetid://452267918"
+	sound.Volume = 0.4
+	sound:Play()
+	game.Debris:AddItem(sound, 2)
+end
 
 -- Executor kontrolü (sadece Solara için)
 local executorName = (identifyexecutor and identifyexecutor())
@@ -35,14 +43,6 @@ local blur = Instance.new("BlurEffect", lighting)
 blur.Size = 15
 blur.Enabled = false
 
--- Click sesi
-local function errorr()
-	local sound = Instance.new("Sound", gui)
-	sound.SoundId = "rbxassetid://452267918"
-	sound.Volume = 0.4
-	sound:Play()
-	game.Debris:AddItem(sound, 2)
-end
 -- Click sesi
 local function playClickSound()
 	local sound = Instance.new("Sound", gui)
