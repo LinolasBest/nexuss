@@ -9,29 +9,36 @@ local physicsService = game:GetService("PhysicsService")
 local tweenService = game:GetService("TweenService")
 local cam = workspace.CurrentCamera
 
--- Click/uyarı sesi (önce tanımla!)
-local function errorr()
-	local sound = Instance.new("Sound", player:WaitForChild("PlayerGui"))
-	sound.SoundId = "rbxassetid://452267918"
-	sound.Volume = 0.4
-	sound:Play()
-	game.Debris:AddItem(sound, 2)
-end
-
 -- Executor kontrolü (sadece Solara için)
 local executorName = (identifyexecutor and identifyexecutor())
-                or (getexecutorname and getexecutorname())
-                or (get_exploit and get_exploit())
-                or "bilinmiyor"
+                  or (getexecutorname and getexecutorname())
+                  or (get_exploit and get_exploit())
+                  or "bilinmiyor"
 
--- Sadece "solara" içeren executor ismine izin ver
+-- Hata sesi fonksiyonu
+local function eror()
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://5229833733" -- Ses ID'si geçerli mi kontrol et
+	sound.Volume = 0.6
+	sound.Parent = game:GetService("SoundService") -- Sesin çalması için en güvenli yer
+	sound:Play()
+	game.Debris:AddItem(sound, 3)
+end
+
+-- Executor adı uyumsuzsa:
 if not tostring(executorName):lower():find("solara") then
-    errorr()
-    setclipboard("https://discord.gg/ZdMa28f2UT") -- Kullanıcıya linki kopyalar
-    game.Players.LocalPlayer:Kick("Bu script sadece Solara V3 ile çalışır. lütfen discord üzerinden admine ulaşın discord panoya kopyalandı")
+    eror() -- Ses çal
+    setclipboard("https://discord.gg/ZdMa28f2UT")
     
+    task.delay(0.5, function()
+        player:Kick("Bu script sadece Solara V3 ile çalışır.")
+    end)
+
     return
 end
+
+
+
 
 
 -- Ana GUI
