@@ -5,6 +5,9 @@ local uis = game:GetService("UserInputService")
 local rs = game:GetService("RunService")
 local lighting = game:GetService("Lighting")
 local players = game:GetService("Players")
+local physicsService = game:GetService("PhysicsService")
+local tweenService = game:GetService("TweenService")
+local cam = workspace.CurrentCamera
 
 -- Ana GUI
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -18,16 +21,16 @@ blur.Enabled = false
 -- Click sesi
 local function playClickSound()
 	local sound = Instance.new("Sound", gui)
-	sound.SoundId = "rbxassetid://9118823104"
+	sound.SoundId = "rbxassetid://452267918"
 	sound.Volume = 0.4
 	sound:Play()
 	game.Debris:AddItem(sound, 2)
 end
 
--- Ana çerçeve
+-- Ana çerçeve - YÜKSEKLİK ARTIRILDI
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 450, 0, 500)
-frame.Position = UDim2.new(0.5, -185, 0.5, -200)
+frame.Size = UDim2.new(0, 450, 0, 650) -- Yükseklik 500'den 630'e çıkarıldı
+frame.Position = UDim2.new(0.5, -225, 0.5, -290) -- Konum da güncellendi (genişlik/2, yükseklik/2)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 frame.Visible = false
 frame.BorderSizePixel = 0
@@ -36,7 +39,7 @@ Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 -- Sıralama sistemi
 local layout = Instance.new("UIListLayout", frame)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0, 12) -- 10 yerine
+layout.Padding = UDim.new(0, 12)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 layout.VerticalAlignment = Enum.VerticalAlignment.Top
 
@@ -54,12 +57,12 @@ title.TextStrokeTransparency = 0.6 -- Hafif parıltı hissi
 
 -- Alt başlık
 local subtitle = Instance.new("TextLabel", frame)
-subtitle.Size = UDim2.new(1, 0, 0, 30)
+subtitle.Size = UDim2.new(1, 0, 0, 25)
 subtitle.BackgroundTransparency = 1
-subtitle.Text = "Your Edge in the Game"
+subtitle.Text = "Your Edge in the Game, Made by .flexyxd (Kayra)"
 subtitle.Font = Enum.Font.Gotham
-subtitle.TextSize = 16
-subtitle.TextColor3 = Color3.fromRGB(180, 180, 190)
+subtitle.TextSize = 14
+subtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
 subtitle.LayoutOrder = 1
 
 frame.BackgroundTransparency = 0.2
@@ -83,8 +86,8 @@ local function createButton(text)
 	return b
 end
 
-
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.ResetOnSpawn = false
 
 -- Şık hoş geldin mesajı
 local welcomeLabel = Instance.new("TextLabel", gui)
@@ -136,12 +139,14 @@ task.spawn(function()
     welcomeLabel:Destroy()
 end)
 
-
-
 -- Özellikler
-local infJump, tpEnabled, speedLevel, espEnabled, aimbotEnabled = false, false, 0, false, false
+local infJump, tpEnabled, speedLevel, espEnabled, aimbotEnabled, noclipEnabled = false, false, 0, false, false, false
+local noLegsEnabled, flashlightEnabled, nightModeEnabled = false, false, false
 local connections = {}
-local espObjects = {}
+local espData = {}
+local originalCollisionGroup = "Default"
+local noclipCollisionGroupName = "NoclipGroup"
+local noclipConnection
 
 -- Infinite Jump
 local infJumpBtn = createButton("Infinite Jump: OFF")
@@ -182,7 +187,6 @@ local function getClosestPlayerToMouse()
 			end
 		end
 	end
-
 	return target
 end
 
@@ -197,13 +201,23 @@ end)
 
 -- Speed
 local speedBtn = createButton("Speed: OFF")
-local humanoid = player.Character:WaitForChild("Humanoid")
+local currentHumanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+
+player.CharacterAdded:Connect(function(char)
+	currentHumanoid = char:WaitForChild("Humanoid")
+	if speedLevel > 0 then
+		local speeds = {16, 32, 80, 160, 240, 320, 400, 480}
+		currentHumanoid.WalkSpeed = speeds[speedLevel + 1]
+	end
+end)
 
 speedBtn.MouseButton1Click:Connect(function()
 	speedLevel = (speedLevel + 1) % 8
 	local speeds = {16, 32, 80, 160, 240, 320, 400, 480}
 	local labels = {"OFF", "x2", "x5", "x10", "x15", "x20", "x25", "x30"}
-	humanoid.WalkSpeed = speeds[speedLevel + 1]
+	if currentHumanoid then
+		currentHumanoid.WalkSpeed = speeds[speedLevel + 1]
+	end
 	speedBtn.Text = "Speed: " .. labels[speedLevel + 1]
 	playClickSound()
 end)
@@ -225,57 +239,478 @@ mouse.Button1Down:Connect(function()
 	end
 end)
 
--- ESP
+--- Noclip ---
+local noclipBtn = createButton("Noclip: OFF")
+
+local function setPartCollisionGroup(part, groupName)
+    local success, message = pcall(function()
+        physicsService:SetPartCollisionGroup(part, groupName)
+    end)
+    if not success then
+        warn("Failed to set collision group for part:", part.Name, message)
+    end
+end
+
+local function applyNoclipToCharacter(char)
+    if not char then return end
+
+    local noclipGroupExists = physicsService:GetCollisionGroupId(noclipCollisionGroupName) ~= nil
+    if not noclipGroupExists then
+        physicsService:CreateCollisionGroup(noclipCollisionGroupName)
+        physicsService:SetCollisionGroupCollidable(noclipCollisionGroupName, "Default", false)
+        physicsService:SetCollisionGroupCollidable(noclipCollisionGroupName, noclipCollisionGroupName, false)
+    end
+
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.PlatformStand = true
+    end
+
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+            setPartCollisionGroup(part, noclipCollisionGroupName)
+        end
+    end
+end
+
+local function disableNoclip()
+    local char = player.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+                setPartCollisionGroup(part, originalCollisionGroup)
+            end
+        end
+    end
+
+    local success, message = pcall(function()
+        if physicsService:GetCollisionGroupId(noclipCollisionGroupName) then
+            physicsService:RemoveCollisionGroup(noclipCollisionGroupName)
+        end
+    end)
+    if not success then
+        warn("Failed to remove NoclipGroup:", message)
+    end
+
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+end
+
+noclipBtn.MouseButton1Click:Connect(function()
+    noclipEnabled = not noclipEnabled
+    noclipBtn.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
+    playClickSound()
+
+    if noclipEnabled then
+        local char = player.Character
+        if char then
+            applyNoclipToCharacter(char)
+        end
+        noclipConnection = player.CharacterAdded:Connect(function(newChar)
+            applyNoclipToCharacter(newChar)
+        end)
+    else
+        disableNoclip()
+    end
+end)
+
+--- Gelişmiş ESP ---
 local espBtn = createButton("ESP: OFF")
+local espLoopConnection
 
 local function createESP(plr)
-	if plr == player then return end
+	if plr == player or not plr.Character then return end
+
 	local char = plr.Character
-	if not char or not char:FindFirstChild("Head") then return end
+	local head = char:FindFirstChild("Head")
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	local rootPart = char:FindFirstChild("HumanoidRootPart")
 
-	local espBox = Instance.new("BoxHandleAdornment")
-	espBox.Adornee = char
-	espBox.Size = Vector3.new(4, 6, 2)
-	espBox.Color3 = Color3.new(1, 0, 0)
-	espBox.AlwaysOnTop = true
-	espBox.ZIndex = 5
-	espBox.Transparency = 0.5
-	espBox.Parent = gui
-	espObjects[plr.Name .. "_box"] = espBox
+	if not head or not humanoid or not rootPart then return end
 
-	local nameGui = Instance.new("BillboardGui", gui)
-	nameGui.Name = "ESP_" .. plr.Name
-	nameGui.Adornee = char:FindFirstChild("Head")
-	nameGui.Size = UDim2.new(0, 100, 0, 40)
-	nameGui.AlwaysOnTop = true
-	local label = Instance.new("TextLabel", nameGui)
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.Text = plr.Name
-	label.TextColor3 = Color3.fromRGB(255, 0, 0)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	espObjects[plr.Name .. "_name"] = nameGui
-end
+	local espElements = {}
 
-local function removeESP()
-	for _, v in pairs(espObjects) do
-		if v then v:Destroy() end
+	-- 3D Box Adornment - Çözüldü: Adornee ve Size doğru ayarlanacak
+	local boxAdorn = Instance.new("BoxHandleAdornment")
+	boxAdorn.Color3 = Color3.fromRGB(255, 0, 0) -- Kırmızı
+	boxAdorn.Transparency = 0.6 -- Görünürlük ayarı
+	boxAdorn.AlwaysOnTop = true
+	boxAdorn.Adornee = char -- Karakterin tamamına bağlanır, bu sayede boyutları otomatik ayarlanır
+	boxAdorn.ZIndex = 5
+	boxAdorn.Parent = gui
+	espElements.Box = boxAdorn
+
+	-- BillboardGui for Name and Health
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size = UDim2.new(0, 150, 0, 60)
+	billboard.StudsOffset = Vector3.new(0, 3, 0) -- Karakterin biraz üstünde
+	billboard.AlwaysOnTop = true
+	billboard.Adornee = head
+	billboard.Parent = gui
+	espElements.Billboard = billboard
+
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Name = "NameLabel"
+	nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	nameLabel.Position = UDim2.new(0, 0, 0, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Text = plr.Name
+	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	nameLabel.TextSize = 14
+	nameLabel.Font = Enum.Font.GothamSemibold
+	nameLabel.TextStrokeTransparency = 0.5
+	nameLabel.Parent = billboard
+	espElements.NameLabel = nameLabel
+
+	local healthBarBackground = Instance.new("Frame")
+	healthBarBackground.Name = "HealthBarBG"
+	healthBarBackground.Size = UDim2.new(1, 0, 0.2, 0)
+	healthBarBackground.Position = UDim2.new(0, 0, 0.5, 0)
+	healthBarBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	healthBarBackground.BorderSizePixel = 0
+	healthBarBackground.Parent = billboard
+	espElements.HealthBarBG = healthBarBackground
+
+	local healthBar = Instance.new("Frame")
+	healthBar.Name = "HealthBar"
+	healthBar.Size = UDim2.new(1, 0, 1, 0)
+	healthBar.Position = UDim2.new(0, 0, 0, 0)
+	healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+	healthBar.BorderSizePixel = 0
+	healthBar.Parent = healthBarBackground
+	espElements.HealthBar = healthBar
+
+	-- Tracers (Player'dan Head'e çizgi)
+	local tracer = Instance.new("LineHandleAdornment")
+	tracer.Color3 = Color3.fromRGB(255, 255, 0)
+	tracer.AlwaysOnTop = true
+	tracer.Thickness = 2
+	tracer.ZIndex = 5
+	tracer.Parent = gui
+	espElements.Tracer = tracer
+
+	-- Skeleton
+	local function createLimb(part1, part2, color)
+		local limb = Instance.new("LineHandleAdornment")
+		limb.Color3 = color
+		limb.AlwaysOnTop = true
+		limb.Thickness = 1.5
+		limb.ZIndex = 5
+		limb.Parent = gui
+		return limb
 	end
-	espObjects = {}
+
+	-- Ortak iskelet parçalarını bulma yardımcı fonksiyonu
+	local function findBodyPart(charModel, partNames)
+		for _, name in ipairs(partNames) do
+			local part = charModel:FindFirstChild(name)
+			if part then return part end
+		end
+		return nil
+	end
+
+	local torso = findBodyPart(char, {"Torso", "UpperTorso"})
+	local headPart = findBodyPart(char, {"Head"})
+	local leftArm = findBodyPart(char, {"Left Arm", "LeftUpperArm"})
+	local rightArm = findBodyPart(char, {"Right Arm", "RightUpperArm"})
+	local leftLeg = findBodyPart(char, {"Left Leg", "LeftUpperLeg"})
+	local rightLeg = findBodyPart(char, {"Right Leg", "RightUpperLeg"})
+	local leftLowerArm = findBodyPart(char, {"LeftLowerArm"})
+	local rightLowerArm = findBodyPart(char, {"RightLowerArm"})
+	local leftLowerLeg = findBodyPart(char, {"LeftLowerLeg"})
+	local rightLowerLeg = findBodyPart(char, {"RightLowerLeg"})
+	local leftFoot = findBodyPart(char, {"LeftFoot"})
+	local rightFoot = findBodyPart(char, {"RightFoot"})
+
+	-- Ana Bağlantılar
+	if headPart and torso then espElements.NeckLimb = createLimb(headPart, torso, Color3.fromRGB(0, 255, 255)) end
+	if torso and leftArm then espElements.LeftShoulderLimb = createLimb(torso, leftArm, Color3.fromRGB(0, 255, 255)) end
+	if torso and rightArm then espElements.RightShoulderLimb = createLimb(torso, rightArm, Color3.fromRGB(0, 255, 255)) end
+	if torso and leftLeg then espElements.LeftHipLimb = createLimb(torso, leftLeg, Color3.fromRGB(0, 255, 255)) end
+	if torso and rightLeg then espElements.RightHipLimb = createLimb(torso, rightLeg, Color3.fromRGB(0, 255, 255)) end
+
+	-- Alt Uzuv Bağlantıları
+	if leftArm and leftLowerArm then espElements.LeftElbowLimb = createLimb(leftArm, leftLowerArm, Color3.fromRGB(0, 255, 255)) end
+	if rightArm and rightLowerArm then espElements.RightElbowLimb = createLimb(rightArm, rightLowerArm, Color3.fromRGB(0, 255, 255)) end
+	if leftLeg and leftLowerLeg then espElements.LeftKneeLimb = createLimb(leftLeg, leftLowerLeg, Color3.fromRGB(0, 255, 255)) end
+	if rightLeg and rightLowerLeg then espElements.RightKneeLimb = createLimb(rightLeg, rightLowerLeg, Color3.fromRGB(0, 255, 255)) end
+	if leftLowerLeg and leftFoot then espElements.LeftAnkleLimb = createLimb(leftLowerLeg, leftFoot, Color3.fromRGB(0, 255, 255)) end
+	if rightLowerLeg and rightFoot then espElements.RightAnkleLimb = createLimb(rightLowerLeg, rightFoot, Color3.fromRGB(0, 255, 255)) end
+
+	espData[plr] = espElements
 end
 
+local function removeESP(plr)
+	if espData[plr] then
+		for _, v in pairs(espData[plr]) do
+			if v and v.Parent then v:Destroy() end
+		end
+		espData[plr] = nil
+	end
+end
+
+local function updateAllESP()
+	if not espEnabled then return end
+
+	for plr, elements in pairs(espData) do
+		local char = plr.Character
+		if not char or not elements.Box or not elements.Billboard then
+			removeESP(plr)
+			continue
+		end
+
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		local head = char:FindFirstChild("Head")
+		local rootPart = char:FindFirstChild("HumanoidRootPart")
+
+		if not humanoid or not head or not rootPart then
+			removeESP(plr)
+			continue
+		end
+
+		-- Box Boyutunu Güncelle (her zaman karakterin bounding box'ına göre)
+		local charMin, charMax = char:GetExtentsInObjectSpace()
+		local charSize = charMax - charMin
+		elements.Box.Size = charSize
+		elements.Box.Adornee = char -- Kutu doğrudan karakterin etrafına çizilir
+
+		-- Billboard Konumu ve İçeriği
+		elements.Billboard.Adornee = head
+		elements.NameLabel.Text = plr.Name
+		local healthRatio = humanoid.Health / humanoid.MaxHealth
+		elements.HealthBar.Size = UDim2.new(healthRatio, 0, 1, 0)
+		elements.HealthBar.BackgroundColor3 = Color3.fromRGB(255 * (1 - healthRatio), 255 * healthRatio, 0)
+
+		-- Tracer Konumu
+		if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			elements.Tracer.Visible = true
+			elements.Tracer.P0 = player.Character.HumanoidRootPart.Position
+			elements.Tracer.P1 = head.Position
+		else
+			elements.Tracer.Visible = false
+		end
+
+		-- Skeleton Konumu
+		local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+		local headPart = char:FindFirstChild("Head")
+		local leftArm = char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm")
+		local rightArm = char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm")
+		local leftLeg = char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftUpperLeg")
+		local rightLeg = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightUpperLeg")
+		local leftLowerArm = char:FindFirstChild("LeftLowerArm")
+		local rightLowerArm = char:FindFirstChild("RightLowerArm")
+		local leftLowerLeg = char:FindFirstChild("LeftLowerLeg")
+		local rightLowerLeg = char:FindFirstChild("RightLowerLeg")
+		local leftFoot = char:FindFirstChild("LeftFoot")
+		local rightFoot = char:FindFirstChild("RightFoot")
+
+
+		local skeletonParts = {
+			{elements.NeckLimb, headPart, torso},
+			{elements.LeftShoulderLimb, torso, leftArm},
+			{elements.RightShoulderLimb, torso, rightArm},
+			{elements.LeftHipLimb, torso, leftLeg},
+			{elements.RightHipLimb, torso, rightLeg},
+			{elements.LeftElbowLimb, leftArm, leftLowerArm},
+			{elements.RightElbowLimb, rightArm, rightLowerArm},
+			{elements.LeftKneeLimb, leftLeg, leftLowerLeg},
+			{elements.RightKneeLimb, rightLeg, rightLowerLeg},
+			{elements.LeftAnkleLimb, leftLowerLeg, leftFoot},
+			{elements.RightAnkleLimb, rightLowerLeg, rightFoot},
+		}
+
+		for _, limbData in ipairs(skeletonParts) do
+			local limbAdorn = limbData[1]
+			local partA = limbData[2]
+			local partB = limbData[3]
+
+			if limbAdorn and partA and partB and partA.Parent and partB.Parent then
+				limbAdorn.Visible = true
+				limbAdorn.P0 = partA.Position
+				limbAdorn.P1 = partB.Position
+			elseif limbAdorn then -- Eğer parçalardan biri yoksa gizle
+				limbAdorn.Visible = false
+			end
+		end
+
+	end
+end
+
+-- ESP buton click
 espBtn.MouseButton1Click:Connect(function()
 	espEnabled = not espEnabled
 	espBtn.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
 	playClickSound()
+
 	if espEnabled then
 		for _, plr in ipairs(players:GetPlayers()) do
-			if plr.Character then createESP(plr) end
+			createESP(plr)
 		end
-		table.insert(connections, players.PlayerAdded:Connect(createESP))
-		table.insert(connections, players.PlayerRemoving:Connect(function(p) if espObjects[p.Name] then espObjects[p.Name]:Destroy() end end))
+
+		table.insert(connections, players.PlayerAdded:Connect(function(newPlr)
+			newPlr.CharacterAdded:Connect(function(newChar)
+				createESP(newPlr)
+			end)
+			createESP(newPlr)
+		end))
+
+		table.insert(connections, players.PlayerRemoving:Connect(removeESP))
+
+		espLoopConnection = rs.RenderStepped:Connect(updateAllESP)
 	else
-		removeESP()
+		if espLoopConnection then
+			espLoopConnection:Disconnect()
+			espLoopConnection = nil
+		end
+		for plr, _ in pairs(espData) do
+			removeESP(plr)
+		end
+		espData = {}
+	end
+end)
+
+
+--- No Legs Modülü ---
+local noLegsBtn = createButton("No Legs: OFF")
+local noLegsConnection
+
+local function applyNoLegs()
+	local char = player.Character
+	if not char then return end
+
+	local function hidePart(part)
+		if part and part:IsA("BasePart") then
+			part.Transparency = 1
+		end
+	end
+
+	hidePart(char:FindFirstChild("Left Leg"))
+	hidePart(char:FindFirstChild("LeftUpperLeg"))
+	hidePart(char:FindFirstChild("LeftLowerLeg"))
+	hidePart(char:FindFirstChild("LeftFoot"))
+
+	hidePart(char:FindFirstChild("Right Leg"))
+	hidePart(char:FindFirstChild("RightUpperLeg"))
+	hidePart(char:FindFirstChild("RightLowerLeg"))
+	hidePart(char:FindFirstChild("RightFoot"))
+end
+
+local function disableNoLegs()
+	local char = player.Character
+	if not char then return end
+
+	local function showPart(part)
+		if part and part:IsA("BasePart") then
+			part.Transparency = 0
+		end
+	end
+
+	showPart(char:FindFirstChild("Left Leg"))
+	showPart(char:FindFirstChild("LeftUpperLeg"))
+	showPart(char:FindFirstChild("LeftLowerLeg"))
+	showPart(char:FindFirstChild("LeftFoot"))
+
+	showPart(char:FindFirstChild("Right Leg"))
+	showPart(char:FindFirstChild("RightUpperLeg"))
+	showPart(char:FindFirstChild("RightLowerLeg"))
+	showPart(char:FindFirstChild("RightFoot"))
+end
+
+noLegsBtn.MouseButton1Click:Connect(function()
+	noLegsEnabled = not noLegsEnabled
+	noLegsBtn.Text = "No Legs: " .. (noLegsEnabled and "ON" or "OFF")
+	playClickSound()
+
+	if noLegsEnabled then
+		applyNoLegs()
+		noLegsConnection = player.CharacterAdded:Connect(function(newChar)
+			task.wait(0.1)
+			applyNoLegs()
+		end)
+	else
+		disableNoLegs()
+		if noLegsConnection then
+			noLegsConnection:Disconnect()
+			noLegsConnection = nil
+		end
+	end
+end)
+
+--- Flashlight Modülü ---
+local flashlightBtn = createButton("Flashlight: OFF")
+local flashlightInstance
+
+local function enableFlashlight()
+	if not flashlightInstance and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		flashlightInstance = Instance.new("SpotLight")
+		flashlightInstance.Brightness = 3
+		flashlightInstance.Range = 60
+		flashlightInstance.Face = Enum.NormalId.Front
+		flashlightInstance.Angle = 45
+		flashlightInstance.Color = Color3.fromRGB(255, 255, 200)
+		flashlightInstance.Parent = player.Character.HumanoidRootPart
+	end
+end
+
+local function disableFlashlight()
+	if flashlightInstance then
+		flashlightInstance:Destroy()
+		flashlightInstance = nil
+	end
+end
+
+flashlightBtn.MouseButton1Click:Connect(function()
+	flashlightEnabled = not flashlightEnabled
+	flashlightBtn.Text = "Flashlight: " .. (flashlightEnabled and "ON" or "OFF")
+	playClickSound()
+
+	if flashlightEnabled then
+		enableFlashlight()
+		table.insert(connections, player.CharacterAdded:Connect(function()
+			task.wait(0.1)
+			enableFlashlight()
+		end))
+	else
+		disableFlashlight()
+	end
+end)
+
+--- Toggle Night Modülü ---
+local toggleNightBtn = createButton("Night Mode: OFF")
+local originalClockTime = lighting.ClockTime
+local originalAmbient = lighting.Ambient
+local originalOutdoorAmbient = lighting.OutdoorAmbient
+
+local function enableNightMode()
+	lighting.ClockTime = 0
+	lighting.Ambient = Color3.fromRGB(50, 50, 70)
+	lighting.OutdoorAmbient = Color3.fromRGB(30, 30, 40)
+end
+
+local function disableNightMode()
+	lighting.ClockTime = originalClockTime
+	lighting.Ambient = originalAmbient
+	lighting.OutdoorAmbient = originalOutdoorAmbient
+end
+
+toggleNightBtn.MouseButton1Click:Connect(function()
+	nightModeEnabled = not nightModeEnabled
+	toggleNightBtn.Text = "Night Mode: " .. (nightModeEnabled and "ON" or "OFF")
+	playClickSound()
+
+	if nightModeEnabled then
+		enableNightMode()
+	else
+		disableNightMode()
 	end
 end)
 
@@ -287,15 +722,73 @@ unloadBtn.MouseButton1Click:Connect(function()
 	infJump = false
 	tpEnabled = false
 	speedLevel = 0
-	humanoid.WalkSpeed = 16
+	if currentHumanoid then
+		currentHumanoid.WalkSpeed = 16
+	end
 	espEnabled = false
 	aimbotEnabled = false
-	removeESP()
+	noclipEnabled = false
+	noLegsEnabled = false
+	flashlightEnabled = false
+	nightModeEnabled = false
+
+	disableNoclip()
+	disableNoLegs()
+	disableFlashlight()
+	disableNightMode()
+
+	if espLoopConnection then
+		espLoopConnection:Disconnect()
+		espLoopConnection = nil
+	end
+	for plr, _ in pairs(espData) do
+		removeESP(plr)
+	end
+	espData = {}
+
 	for _, c in pairs(connections) do
 		if typeof(c) == "RBXScriptConnection" then c:Disconnect() end
 	end
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    if noLegsConnection then
+        noLegsConnection:Disconnect()
+        noLegsConnection = nil
+    end
+
 	blur:Destroy()
 	gui:Destroy()
+end)
+
+
+-- Discord Butonu
+local discordButton = Instance.new("ImageButton")
+discordButton.Size = UDim2.new(0, 40, 0, 40)
+discordButton.Position = UDim2.new(1, -50, 0, 10) -- Frame’in sağ üst köşesine yakın
+discordButton.BackgroundTransparency = 1
+discordButton.Image = "rbxassetid://75784432088309" -- Replace with the actual Discord logo Asset ID
+discordButton.Parent = frame
+
+-- Hafif gölge efekti
+local stroke = Instance.new("UIStroke", discordButton)
+stroke.Color = Color3.fromRGB(255, 255, 255)
+stroke.Thickness = 1.5
+stroke.Transparency = 0.3
+
+-- Yuvarlak şekil
+Instance.new("UICorner", discordButton).CornerRadius = UDim.new(1, 0)
+
+-- Tıklanınca link aç
+discordButton.MouseButton1Click:Connect(function()
+	playClickSound()
+	setclipboard("https://discord.gg/ZdMa28f2UT") -- Kullanıcıya linki kopyalar
+	game.StarterGui:SetCore("SendNotification", {
+		Title = "Nexus Discord",
+		Text = "Discord penceresi açıldı",
+		Duration = 4
+	})
 end)
 
 -- Menü Toggle
