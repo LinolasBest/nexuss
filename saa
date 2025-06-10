@@ -42,13 +42,15 @@ layout.VerticalAlignment = Enum.VerticalAlignment.Top
 
 -- Başlık
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 50)
+title.Size = UDim2.new(1, 0, 0, 60)
 title.BackgroundTransparency = 1
-title.Text = "☄ Nexus & Mood ☄"
+title.Text = "☄ NEXUS & MOOD ☄"
 title.Font = Enum.Font.GothamBlack
-title.TextSize = 26
-title.TextColor3 = Color3.fromRGB(255, 100, 255)
+title.TextSize = 32
+title.TextColor3 = Color3.fromRGB(255, 150, 255) -- Canlı, parlayan pembe/mor
 title.LayoutOrder = 0
+title.TextStrokeColor3 = Color3.fromRGB(255, 100, 255) -- Metinle aynı tonda, hafif koyu stroke
+title.TextStrokeTransparency = 0.6 -- Hafif parıltı hissi
 
 -- Alt başlık
 local subtitle = Instance.new("TextLabel", frame)
