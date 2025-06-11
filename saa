@@ -9,45 +9,6 @@ local physicsService = game:GetService("PhysicsService")
 local tweenService = game:GetService("TweenService")
 local cam = workspace.CurrentCamera
 
--- ✅ Uyumlu ses (Solara ile açılırsa)
-local function playSuccessSound()
-	local sound = Instance.new("Sound")
-	sound.SoundId = "rbxassetid://1584394759"
-	sound.Volume = 0.6
-	sound.Parent = soundService
-	sound:Play()
-	game.Debris:AddItem(sound, 3)
-end
-
--- ❌ Uyumsuz ses (başka executor kullanılırsa)
-local function playErrorSound()
-	local sound = Instance.new("Sound")
-	sound.SoundId = "rbxassetid://5229833733"
-	sound.Volume = 0.6
-	sound.Parent = soundService
-	sound:Play()
-	game.Debris:AddItem(sound, 3)
-end
-
--- Executor kontrolü (sadece Solara için)
-local executorName = (identifyexecutor and identifyexecutor())
-               or (getexecutorname and getexecutorname())
-               or (get_exploit and get_exploit())
-               or "bilinmiyor"
-
--- Eğer Solara değilse:
-if not tostring(executorName):lower():find("solara") then
-	playErrorSound()
-	setclipboard("https://discord.gg/ZdMa28f2UT")
-	task.delay(0.5, function()
-		player:Kick("Bu script sadece Solara V3 ile çalışır. Discord linki panoya kopyalandı.")
-	end)
-	return
-end
-
--- Uyumluysa başarı sesi çal
-playSuccessSound()
-
 
 
 
