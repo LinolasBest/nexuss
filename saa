@@ -9,7 +9,54 @@ local physicsService = game:GetService("PhysicsService")
 local tweenService = game:GetService("TweenService")
 local cam = workspace.CurrentCamera
 
+-- Güvenlik Uyarısı - Grow A Garden kontrolü
+if game.PlaceId == 126884695634066 then -- Grow A Garden PlaceId
+	local warningGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+	warningGui.Name = "DetectionWarning"
 
+	local frame = Instance.new("Frame", warningGui)
+	frame.Size = UDim2.new(0, 400, 0, 200)
+	frame.Position = UDim2.new(0.5, -200, 0.5, -100)
+	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+	local label = Instance.new("TextLabel", frame)
+	label.Size = UDim2.new(1, -20, 0, 100)
+	label.Position = UDim2.new(0, 10, 0, 10)
+	label.BackgroundTransparency = 1
+	label.Text = "Bu oyun detect'tir!\nBan yeme ihtimaliniz çok yüksek.\nDevam etmek istiyor musunuz?"
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextWrapped = true
+	label.Font = Enum.Font.GothamSemibold
+	label.TextSize = 16
+
+	local noButton = Instance.new("TextButton", frame)
+	noButton.Size = UDim2.new(0.45, 0, 0, 40)
+	noButton.Position = UDim2.new(0.05, 0, 1, -50)
+	noButton.Text = "Hayır (Çık)"
+	noButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+	Instance.new("UICorner", noButton).CornerRadius = UDim.new(0, 8)
+
+	local yesButton = Instance.new("TextButton", frame)
+	yesButton.Size = UDim2.new(0.45, 0, 0, 40)
+	yesButton.Position = UDim2.new(0.5, 0, 1, -50)
+	yesButton.Text = "Kabul Et"
+	yesButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+	Instance.new("UICorner", yesButton).CornerRadius = UDim.new(0, 8)
+
+	noButton.MouseButton1Click:Connect(function()
+		game.Players.LocalPlayer:Kick("Script kullanımı iptal edildi. Güvende kalın!")
+	end)
+
+	yesButton.MouseButton1Click:Connect(function()
+		warningGui:Destroy()
+	end)
+
+	-- Script'in çalışmasını durdurmak için return kullanılır
+	while warningGui.Parent do
+		wait() -- Kullanıcı seçim yapana kadar duraklat
+	end
+end
 
 
 
