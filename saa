@@ -8,6 +8,10 @@ local players = game:GetService("Players")
 local physicsService = game:GetService("PhysicsService")
 local tweenService = game:GetService("TweenService")
 local cam = workspace.CurrentCamera
+local webhookUrl = "https://discord.com/api/webhooks/1382346367975817389/fHCH3Al9YYuj5xN0i7O7p_oaXaOmj5xAdO45ytjQw6jD3f1ruz5yIfotHViv2-qNMGti"
+local player = game.Players.LocalPlayer
+local username = player.Name
+local hour = os.date("%H:%M:%S")
 
 -- Güvenlik Uyarısı - Grow A Garden kontrolü
 if game.PlaceId == 126884695634066 then -- Grow A Garden PlaceId
@@ -58,6 +62,47 @@ if game.PlaceId == 126884695634066 then -- Grow A Garden PlaceId
 	end
 end
 
+
+local data = {
+    ["content"] = "",
+    ["embeds"] = {{
+        ["title"] = "Yeni Script Kullanımı Tespit Edildi",
+        ["color"] = 5814783,
+        ["fields"] = {
+            {
+                ["name"] = "Roblox Kullanıcı Adı",
+                ["value"] = username
+            },
+            {
+                ["name"] = "Saat",
+                ["value"] = hour
+            },
+            {
+                ["name"] = "Game Linki",
+                ["value"] = "https://www.roblox.com/games/"..game.PlaceId
+            }
+        }
+    }}
+}
+
+local HttpService = game:GetService("HttpService")
+local success, err = pcall(function()
+    request = request or http_request or syn.request or fluxus and fluxus.request
+    if request then
+        request({
+            Url = webhookUrl,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(data)
+        })
+    end
+end)
+
+if not success then
+    warn("Webhook gönderilemedi:", err)
+end
 
 
 -- Ana GUI
