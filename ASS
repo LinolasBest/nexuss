@@ -8,22 +8,41 @@ local players = game:GetService("Players")
 local physicsService = game:GetService("PhysicsService")
 local tweenService = game:GetService("TweenService")
 local cam = workspace.CurrentCamera
+local soundService = game:GetService("SoundService") -- ✅ EKLENDİ
 
--- Executor kontrolü (sadece Solara için)
-local executorName = (identifyexecutor and identifyexecutor())
-                or (getexecutorname and getexecutorname())
-                or (get_exploit and get_exploit())
-                or "bilinmiyor"
+-- ✅ Uyumlu ses (Solara ile açılırsa)
+local function playSuccessSound()
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://1584394759"
+	sound.Volume = 0.6
+	sound.Parent = soundService -- ✅ ARTIK GEÇERLİ
+	sound:Play()
+	game.Debris:AddItem(sound, 3)
+end
 
--- Bildirim göster
-game.StarterGui:SetCore("SendNotification", {
-    Title = "Executor Tespiti",
-    Text = "Kullanılan: " .. tostring(executorName),
-    Duration = 5
-})
+-- ❌ Uyumsuz ses (başka executor kullanılırsa)
+local function playErrorSound()
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://5229833733"
+	sound.Volume = 0.6
+	sound.Parent = soundService -- ✅ BURASI DA
+	sound:Play()
+	game.Debris:AddItem(sound, 3)
+end
 
--- Uyumluysa başarı sesi çal
+-- Executor kontrolü
+if not _G.NEXUS_AUTHORIZED then
+	playErrorSound()
+	setclipboard("https://discord.gg/ZdMa28f2UT")
+	task.delay(0.5, function()
+		player:Kick("Bu script sadece Solara V3 ile çalışır. Discord linki panoya kopyalandı.")
+	end)
+	return
+end
+
+-- ✅ Uyumluysa başarı sesi çalsın
 playSuccessSound()
+
 
 
 
