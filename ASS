@@ -10,24 +10,23 @@ local tweenService = game:GetService("TweenService")
 local cam = workspace.CurrentCamera
 local soundService = game:GetService("SoundService") -- ✅ EKLENDİ
 
--- ✅ Uyumlu ses (Solara ile açılırsa)
+local player = game.Players.LocalPlayer
+local soundService = game:GetService("SoundService")
+
 local function playSuccessSound()
-	local sound = Instance.new("Sound")
+	local sound = Instance.new("Sound", workspace)
 	sound.SoundId = "rbxassetid://1584394759"
 	sound.Volume = 0.6
-	sound.Parent = soundService -- ✅ ARTIK GEÇERLİ
-	sound:Play()
-	game.Debris:AddItem(sound, 3)
+	sound.PlayOnRemove = true
+	sound:Destroy()
 end
 
--- ❌ Uyumsuz ses (başka executor kullanılırsa)
 local function playErrorSound()
-	local sound = Instance.new("Sound")
+	local sound = Instance.new("Sound", workspace)
 	sound.SoundId = "rbxassetid://5229833733"
 	sound.Volume = 0.6
-	sound.Parent = soundService -- ✅ BURASI DA
-	sound:Play()
-	game.Debris:AddItem(sound, 3)
+	sound.PlayOnRemove = true
+	sound:Destroy()
 end
 
 -- Executor kontrolü
@@ -37,10 +36,11 @@ if not _G.NEXUS_AUTHORIZED then
 	task.delay(0.5, function()
 		player:Kick("Bu script sadece Solara V3 ile çalışır. Discord linki panoya kopyalandı.")
 	end)
+	task.wait(1) -- Ses çalmasına zaman tanı
 	return
 end
 
--- ✅ Uyumluysa başarı sesi çalsın
+-- Uyumluysa
 playSuccessSound()
 
 
