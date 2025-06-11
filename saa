@@ -345,19 +345,26 @@ end)
 -- Speed
 local speedBtn = createButton("Speed: OFF")
 local currentHumanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+local speedLevel = 0 -- Varsayılan başlangıç seviyesi
+
+local speeds = {16} -- İlk değer default hız
+local labels = {"OFF"} -- İlk label
+
+-- x1'den x100'e kadar hızları oluştur
+for i = 1, 100 do
+	table.insert(speeds, 16 * i)
+	table.insert(labels, "x" .. i)
+end
 
 player.CharacterAdded:Connect(function(char)
 	currentHumanoid = char:WaitForChild("Humanoid")
 	if speedLevel > 0 then
-		local speeds = {16, 32, 80, 160, 240, 320, 400, 480}
 		currentHumanoid.WalkSpeed = speeds[speedLevel + 1]
 	end
 end)
 
 speedBtn.MouseButton1Click:Connect(function()
-	speedLevel = (speedLevel + 1) % 8
-	local speeds = {16, 32, 80, 160, 240, 320, 400, 480}
-	local labels = {"OFF", "x2", "x5", "x10", "x15", "x20", "x25", "x30"}
+	speedLevel = (speedLevel + 1) % #speeds
 	if currentHumanoid then
 		currentHumanoid.WalkSpeed = speeds[speedLevel + 1]
 	end
