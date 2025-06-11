@@ -34,7 +34,7 @@ if not _G.NEXUS_AUTHORIZED then
 	playErrorSound()
 	setclipboard("https://discord.gg/ZdMa28f2UT")
 	task.delay(0.5, function()
-		player:Kick("Bu script sadece Solara V3 ile çalışır. Discord linki panoya kopyalandı.")
+		player:Kick("Bu script sadece Solara V3d ile çalışır. Discord linki panoya kopyalandı.")
 	end)
 	task.wait(1) -- Ses çalmasına zaman tanı
 	return
